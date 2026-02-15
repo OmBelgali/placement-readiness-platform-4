@@ -6,10 +6,14 @@ import {
   BookOpen,
   User,
   CircleUser,
+  ScanSearch,
+  History,
 } from 'lucide-react'
 
 const navItems = [
   { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
+  { to: '/dashboard/analyze', icon: ScanSearch, label: 'Analyze JD' },
+  { to: '/dashboard/history', icon: History, label: 'History' },
   { to: '/dashboard/practice', icon: Code2, label: 'Practice' },
   { to: '/dashboard/assessments', icon: ClipboardList, label: 'Assessments' },
   { to: '/dashboard/resources', icon: BookOpen, label: 'Resources' },

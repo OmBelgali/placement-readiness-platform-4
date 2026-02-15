@@ -6,6 +6,9 @@ import Practice from './pages/dashboard/Practice'
 import Assessments from './pages/dashboard/Assessments'
 import Resources from './pages/dashboard/Resources'
 import Profile from './pages/dashboard/Profile'
+import Analyze from './pages/dashboard/Analyze'
+import Results from './pages/dashboard/Results'
+import History from './pages/dashboard/History'
 
 export default function App() {
   return (
@@ -17,6 +20,9 @@ export default function App() {
         <Route path="assessments" element={<Assessments />} />
         <Route path="resources" element={<Resources />} />
         <Route path="profile" element={<Profile />} />
+        <Route path="analyze" element={<Analyze />} />
+        <Route path="results" element={<Results />} />
+        <Route path="history" element={<History />} />
       </Route>
     </Routes>
   )
