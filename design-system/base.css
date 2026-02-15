@@ -1,0 +1,72 @@
+/**
+ * KodNest Premium Build System — Base Styles
+ * Clean, intentional typography and resets
+ */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  font-size: 16px;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  font-family: var(--kn-font-sans);
+  font-size: var(--kn-size-body);
+  line-height: var(--kn-line-height-body);
+  color: var(--kn-text-primary);
+  background-color: var(--kn-background);
+}
+
+/* ========== TYPOGRAPHY ========== */
+h1, h2, h3, h4, h5, h6 {
+  margin: 0 0 var(--kn-space-sm);
+  font-family: var(--kn-font-serif);
+  font-weight: var(--kn-weight-regular);
+  line-height: var(--kn-line-height-tight);
+  letter-spacing: var(--kn-letter-spacing-tight);
+}
+
+h1 {
+  font-size: var(--kn-size-h1);
+  margin-bottom: var(--kn-space-md);
+}
+
+h2 {
+  font-size: var(--kn-size-h2);
+}
+
+h3 {
+  font-size: var(--kn-size-h3);
+}
+
+p {
+  margin: 0 0 var(--kn-space-sm);
+  max-width: var(--kn-max-text-width);
+}
+
+p:last-child {
+  margin-bottom: 0;
+}
+
+.text-block {
+  font-size: var(--kn-size-body-lg);
+  line-height: var(--kn-line-height-relaxed);
+  max-width: var(--kn-max-text-width);
+}
+
+.text-secondary {
+  color: var(--kn-text-secondary);
+}
+
+.caption {
+  font-size: var(--kn-size-caption);
+  color: var(--kn-text-secondary);
+}

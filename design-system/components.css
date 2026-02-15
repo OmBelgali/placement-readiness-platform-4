@@ -1,0 +1,174 @@
+/**
+ * KodNest Premium Build System — Components
+ * Consistent, predictable, no crowding
+ */
+
+/* ========== BUTTONS ========== */
+.kn-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--kn-space-xs) var(--kn-space-sm);
+  font-family: var(--kn-font-sans);
+  font-size: var(--kn-size-body);
+  font-weight: var(--kn-weight-medium);
+  border-radius: var(--kn-radius-button);
+  border: var(--kn-border-width) solid transparent;
+  cursor: pointer;
+  transition: all var(--kn-transition-duration) var(--kn-transition-timing);
+}
+
+.kn-btn:focus {
+  outline: 2px solid var(--kn-border-focus);
+  outline-offset: 2px;
+}
+
+.kn-btn--primary {
+  background-color: var(--kn-accent);
+  color: white;
+  border-color: var(--kn-accent);
+}
+
+.kn-btn--primary:hover {
+  background-color: var(--kn-accent-hover);
+  border-color: var(--kn-accent-hover);
+}
+
+.kn-btn--secondary {
+  background-color: transparent;
+  color: var(--kn-text-primary);
+  border-color: var(--kn-border);
+}
+
+.kn-btn--secondary:hover {
+  border-color: var(--kn-text-primary);
+  background-color: var(--kn-accent-muted);
+}
+
+.kn-btn--small {
+  padding: 6px var(--kn-space-xs);
+  font-size: var(--kn-size-caption);
+}
+
+/* ========== INPUTS ========== */
+.kn-input {
+  width: 100%;
+  padding: var(--kn-space-xs) var(--kn-space-sm);
+  font-family: var(--kn-font-sans);
+  font-size: var(--kn-size-body);
+  color: var(--kn-text-primary);
+  background-color: var(--kn-background);
+  border: var(--kn-border-width) solid var(--kn-border);
+  border-radius: var(--kn-radius);
+  transition: border-color var(--kn-transition-duration) var(--kn-transition-timing);
+}
+
+.kn-input:focus {
+  outline: none;
+  border-color: var(--kn-border-focus);
+}
+
+.kn-input::placeholder {
+  color: var(--kn-text-secondary);
+}
+
+.kn-input--error {
+  border-color: var(--kn-accent);
+}
+
+.kn-textarea {
+  min-height: 100px;
+  resize: vertical;
+}
+
+/* ========== CARDS ========== */
+.kn-card {
+  padding: var(--kn-space-md);
+  border: var(--kn-border-width) solid var(--kn-border);
+  border-radius: var(--kn-radius);
+  background-color: var(--kn-background);
+}
+
+.kn-card--elevated {
+  border-color: rgba(17, 17, 17, 0.16);
+}
+
+/* ========== PROMPT BOX (Copyable) ========== */
+.kn-prompt-box {
+  position: relative;
+  padding: var(--kn-space-sm);
+  font-family: monospace;
+  font-size: var(--kn-size-caption);
+  line-height: 1.5;
+  background-color: rgba(17, 17, 17, 0.04);
+  border: var(--kn-border-width) solid var(--kn-border);
+  border-radius: var(--kn-radius);
+}
+
+.kn-prompt-box__copy {
+  position: absolute;
+  top: var(--kn-space-xs);
+  right: var(--kn-space-xs);
+}
+
+/* ========== STATUS BADGES ========== */
+.kn-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: var(--kn-space-xs) var(--kn-space-sm);
+  font-size: var(--kn-size-caption);
+  font-weight: var(--kn-weight-medium);
+  border-radius: var(--kn-radius);
+}
+
+.kn-badge--success {
+  color: var(--kn-success);
+  border: var(--kn-border-width) solid var(--kn-success);
+}
+
+.kn-badge--warning {
+  color: var(--kn-warning);
+  border: var(--kn-border-width) solid var(--kn-warning);
+}
+
+/* ========== ERROR STATE ========== */
+.kn-error-box {
+  padding: var(--kn-space-md);
+  border: var(--kn-border-width) solid rgba(139, 0, 0, 0.3);
+  border-radius: var(--kn-radius);
+  background-color: var(--kn-accent-muted);
+}
+
+.kn-error-box__title {
+  font-weight: var(--kn-weight-semibold);
+  color: var(--kn-accent);
+  margin-bottom: var(--kn-space-xs);
+}
+
+.kn-error-box__message {
+  font-size: var(--kn-size-body);
+  color: var(--kn-text-primary);
+  margin-bottom: var(--kn-space-xs);
+}
+
+.kn-error-box__fix {
+  font-size: var(--kn-size-caption);
+  color: var(--kn-text-secondary);
+}
+
+/* ========== EMPTY STATE ========== */
+.kn-empty-state {
+  padding: var(--kn-space-xl);
+  text-align: center;
+}
+
+.kn-empty-state__title {
+  font-family: var(--kn-font-serif);
+  font-size: var(--kn-size-h3);
+  margin-bottom: var(--kn-space-xs);
+}
+
+.kn-empty-state__message {
+  margin-bottom: var(--kn-space-md);
+  color: var(--kn-text-secondary);
+}

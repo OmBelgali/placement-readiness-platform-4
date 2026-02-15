@@ -1,0 +1,130 @@
+/**
+ * KodNest Premium Build System — Layout Structure
+ * [Top Bar] → [Context Header] → [Workspace + Panel] → [Proof Footer]
+ */
+
+/* ========== TOP BAR ========== */
+.kn-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--kn-space-sm) var(--kn-space-lg);
+  border-bottom: var(--kn-border-width) solid var(--kn-border);
+  background-color: var(--kn-background);
+}
+
+.kn-topbar__project {
+  font-family: var(--kn-font-serif);
+  font-size: var(--kn-size-body-lg);
+  font-weight: var(--kn-weight-medium);
+  color: var(--kn-text-primary);
+}
+
+.kn-topbar__progress {
+  font-size: var(--kn-size-caption);
+  color: var(--kn-text-secondary);
+}
+
+.kn-topbar__status {
+  padding: var(--kn-space-xs) var(--kn-space-sm);
+  font-size: var(--kn-size-caption);
+  font-weight: var(--kn-weight-medium);
+  border: var(--kn-border-width) solid var(--kn-border);
+  border-radius: var(--kn-radius);
+  background-color: var(--kn-background);
+}
+
+.kn-topbar__status--shipped {
+  border-color: var(--kn-success);
+  color: var(--kn-success);
+}
+
+.kn-topbar__status--in-progress {
+  border-color: var(--kn-warning);
+  color: var(--kn-warning);
+}
+
+/* ========== CONTEXT HEADER ========== */
+.kn-context-header {
+  padding: var(--kn-space-lg) var(--kn-space-lg) var(--kn-space-md);
+}
+
+.kn-context-header__headline {
+  margin: 0 0 var(--kn-space-xs);
+  font-family: var(--kn-font-serif);
+  font-size: var(--kn-size-h1);
+  font-weight: var(--kn-weight-regular);
+  line-height: var(--kn-line-height-tight);
+}
+
+.kn-context-header__subtext {
+  margin: 0;
+  font-size: var(--kn-size-body);
+  color: var(--kn-text-secondary);
+}
+
+/* ========== MAIN CONTENT AREA ========== */
+.kn-main {
+  display: flex;
+  gap: var(--kn-space-lg);
+  padding: var(--kn-space-md) var(--kn-space-lg) var(--kn-space-xl);
+  min-height: calc(100vh - 280px);
+}
+
+/* ========== PRIMARY WORKSPACE (70%) ========== */
+.kn-workspace {
+  flex: 0 0 calc(70% - var(--kn-space-lg) / 2);
+  min-width: 0;
+}
+
+/* ========== SECONDARY PANEL (30%) ========== */
+.kn-panel {
+  flex: 0 0 calc(30% - var(--kn-space-lg) / 2);
+  min-width: 0;
+}
+
+.kn-panel__step {
+  margin-bottom: var(--kn-space-md);
+  font-size: var(--kn-size-body);
+  color: var(--kn-text-secondary);
+  line-height: var(--kn-line-height-body);
+}
+
+.kn-panel__prompt {
+  margin-bottom: var(--kn-space-sm);
+}
+
+.kn-panel__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--kn-space-xs);
+}
+
+/* ========== PROOF FOOTER ========== */
+.kn-proof-footer {
+  padding: var(--kn-space-md) var(--kn-space-lg);
+  border-top: var(--kn-border-width) solid var(--kn-border);
+  background-color: var(--kn-background);
+}
+
+.kn-proof-footer__checklist {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--kn-space-md);
+}
+
+.kn-proof-footer__item {
+  display: flex;
+  align-items: center;
+  gap: var(--kn-space-xs);
+  font-size: var(--kn-size-caption);
+  color: var(--kn-text-secondary);
+}
+
+.kn-proof-footer__checkbox {
+  width: 18px;
+  height: 18px;
+  border: var(--kn-border-width) solid var(--kn-border);
+  border-radius: var(--kn-radius);
+  background-color: var(--kn-background);
+}
