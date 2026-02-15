@@ -13,6 +13,14 @@ function formatDate(iso) {
   }
 }
 
+function getLiveScore(entry) {
+  const base = entry.readinessScore ?? 0
+  const map = entry.skillConfidenceMap || {}
+  let delta = 0
+  for (const v of Object.values(map)) delta += v === "know" ? 2 : -2
+  return Math.max(0, Math.min(100, Math.round(base + delta)))
+}
+
 export default function History() {
   const entries = useMemo(() => getHistory(), [])
 
@@ -46,7 +54,7 @@ export default function History() {
                     <p className="text-sm text-gray-500">{formatDate(e.createdAt)}</p>
                   </div>
                   <span className="px-3 py-1 rounded-full text-sm font-medium bg-primary/10 text-primary">
-                    {e.readinessScore}/100
+                    {getLiveScore(e)}/100
                   </span>
                 </CardContent>
               </Card>

@@ -1,9 +1,9 @@
-import { useMemo } from "react"
+import { useMemo, useState, useEffect, useCallback } from "react"
 import { useSearchParams, Link } from "react-router-dom"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { getEntryById, getHistory } from "@/lib/history"
-import { ChevronLeft } from "lucide-react"
+import { getEntryById, getHistory, updateEntry } from "@/lib/history"
+import { ChevronLeft, Copy, Download } from "lucide-react"
 
 function CircularScore({ value }) {
   const size = 140
@@ -30,10 +30,50 @@ function CircularScore({ value }) {
         />
       </svg>
       <div className="absolute">
-        <span className="text-3xl font-bold text-gray-900">{value}</span>
+        <span className="text-3xl font-bold text-gray-900">{Math.round(value)}</span>
       </div>
     </div>
   )
+}
+
+function getAllSkills(extractedSkills) {
+  const byCat = extractedSkills?.byCategory || {}
+  return Object.entries(byCat).flatMap(([cat, skills]) =>
+    skills.map((s) => ({ skill: s, category: cat }))
+  )
+}
+
+function computeLiveScore(baseScore, skillConfidenceMap) {
+  let delta = 0
+  for (const val of Object.values(skillConfidenceMap)) {
+    delta += val === "know" ? 2 : -2
+  }
+  return Math.max(0, Math.min(100, baseScore + delta))
+}
+
+function formatPlanAsText(plan) {
+  if (!plan?.length) return ""
+  return plan
+    .map(
+      (d) =>
+        `Day ${d.day}: ${d.title}\n${(d.items || []).map((i) => `  • ${i}`).join("\n")}`
+    )
+    .join("\n\n")
+}
+
+function formatChecklistAsText(checklist) {
+  if (!checklist?.length) return ""
+  return checklist
+    .map(
+      (r) =>
+        `${r.round}\n${(r.items || []).map((i) => `  • ${i}`).join("\n")}`
+    )
+    .join("\n\n")
+}
+
+function formatQuestionsAsText(questions) {
+  if (!questions?.length) return ""
+  return questions.map((q, i) => `${i + 1}. ${q}`).join("\n")
 }
 
 export default function Results() {
@@ -45,6 +85,94 @@ export default function Results() {
     const history = getHistory()
     return history[0] || null
   }, [id])
+
+  const allSkills = useMemo(() => getAllSkills(entry?.extractedSkills || {}), [entry?.extractedSkills])
+
+  const [skillConfidenceMap, setSkillConfidenceMap] = useState(() => {
+    const map = {}
+    allSkills.forEach(({ skill }) => {
+      map[skill] = entry?.skillConfidenceMap?.[skill] ?? "practice"
+    })
+    return map
+  })
+
+  useEffect(() => {
+    const map = {}
+    allSkills.forEach(({ skill }) => {
+      map[skill] = entry?.skillConfidenceMap?.[skill] ?? "practice"
+    })
+    setSkillConfidenceMap(map)
+  }, [entry?.id, allSkills, entry?.skillConfidenceMap])
+
+  const baseScore = entry?.readinessScore ?? 0
+  const liveScore = useMemo(
+    () => computeLiveScore(baseScore, skillConfidenceMap),
+    [baseScore, skillConfidenceMap]
+  )
+
+  const handleToggleSkill = useCallback(
+    (skill) => {
+      const next = skillConfidenceMap[skill] === "know" ? "practice" : "know"
+      const nextMap = { ...skillConfidenceMap, [skill]: next }
+      setSkillConfidenceMap(nextMap)
+      if (entry?.id) {
+        updateEntry(entry.id, { skillConfidenceMap: nextMap })
+      }
+    },
+    [entry?.id, skillConfidenceMap]
+  )
+
+  const copyToClipboard = useCallback(async (text) => {
+    try {
+      await navigator.clipboard.writeText(text)
+      return true
+    } catch {
+      return false
+    }
+  }, [])
+
+  const [copyFeedback, setCopyFeedback] = useState(null)
+
+  const handleCopyPlan = useCallback(async () => {
+    const ok = await copyToClipboard(formatPlanAsText(entry?.plan))
+    setCopyFeedback(ok ? "plan" : null)
+    if (ok) setTimeout(() => setCopyFeedback(null), 1500)
+  }, [entry?.plan, copyToClipboard])
+
+  const handleCopyChecklist = useCallback(async () => {
+    const ok = await copyToClipboard(formatChecklistAsText(entry?.checklist))
+    setCopyFeedback(ok ? "checklist" : null)
+    if (ok) setTimeout(() => setCopyFeedback(null), 1500)
+  }, [entry?.checklist, copyToClipboard])
+
+  const handleCopyQuestions = useCallback(async () => {
+    const ok = await copyToClipboard(formatQuestionsAsText(entry?.questions))
+    setCopyFeedback(ok ? "questions" : null)
+    if (ok) setTimeout(() => setCopyFeedback(null), 1500)
+  }, [entry?.questions, copyToClipboard])
+
+  const handleDownloadTxt = useCallback(() => {
+    const sections = [
+      `Placement Readiness — ${entry?.company || "Company"} — ${entry?.role || "Role"}\n${"=".repeat(50)}`,
+      `\n7-DAY PLAN\n${"-".repeat(20)}\n${formatPlanAsText(entry?.plan)}`,
+      `\n\nROUND-WISE CHECKLIST\n${"-".repeat(20)}\n${formatChecklistAsText(entry?.checklist)}`,
+      `\n\n10 LIKELY INTERVIEW QUESTIONS\n${"-".repeat(30)}\n${formatQuestionsAsText(entry?.questions)}`,
+    ]
+    const blob = new Blob([sections.join("")], { type: "text/plain" })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement("a")
+    a.href = url
+    a.download = `placement-prep-${(entry?.company || "export").replace(/\s+/g, "-")}.txt`
+    a.click()
+    URL.revokeObjectURL(url)
+  }, [entry])
+
+  const weakSkills = useMemo(() => {
+    return allSkills
+      .filter(({ skill }) => skillConfidenceMap[skill] === "practice")
+      .slice(0, 3)
+      .map(({ skill }) => skill)
+  }, [allSkills, skillConfidenceMap])
 
   if (!entry) {
     return (
@@ -67,7 +195,7 @@ export default function Results() {
     )
   }
 
-  const { company, role, extractedSkills, checklist, plan, questions, readinessScore } = entry
+  const { company, role, extractedSkills, checklist, plan, questions } = entry
 
   return (
     <div className="space-y-6">
@@ -82,7 +210,7 @@ export default function Results() {
           <h2 className="text-2xl font-bold text-gray-900">
             {company || "Company"} — {role || "Role"}
           </h2>
-          <p className="text-gray-500">Readiness: {readinessScore}/100</p>
+          <p className="text-gray-500">Readiness: {Math.round(liveScore)}/100 (live)</p>
         </div>
       </div>
 
@@ -91,41 +219,61 @@ export default function Results() {
         <Card>
           <CardHeader>
             <CardTitle>Readiness Score</CardTitle>
-            <CardDescription>Based on JD analysis</CardDescription>
+            <CardDescription>Updates as you mark skills. Base +2 per "I know", -2 per "Need practice".</CardDescription>
           </CardHeader>
           <CardContent className="flex justify-center">
-            <CircularScore value={readinessScore} />
+            <CircularScore value={liveScore} />
           </CardContent>
         </Card>
 
-        {/* Key Skills Extracted */}
+        {/* Key Skills Extracted — interactive toggles */}
         <Card>
           <CardHeader>
             <CardTitle>Key Skills Extracted</CardTitle>
-            <CardDescription>Tags grouped by category</CardDescription>
+            <CardDescription>Mark each skill — changes persist in history</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="flex flex-wrap gap-2">
-              {Object.entries(extractedSkills.byCategory || {}).map(([cat, skills]) =>
-                skills.map((s) => (
-                  <span
-                    key={`${cat}-${s}`}
-                    className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-primary/10 text-primary"
-                  >
-                    {s}
-                    <span className="ml-1 text-gray-500 text-xs">({cat})</span>
-                  </span>
-                ))
+              {Object.entries(extractedSkills?.byCategory || {}).map(([cat, skills]) =>
+                skills.map((s) => {
+                  const status = skillConfidenceMap[s] ?? "practice"
+                  return (
+                    <button
+                      key={`${cat}-${s}`}
+                      type="button"
+                      onClick={() => handleToggleSkill(s)}
+                      className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
+                        status === "know"
+                          ? "bg-primary/20 text-primary border border-primary/40"
+                          : "bg-gray-100 text-gray-600 border border-gray-200 hover:border-gray-300"
+                      }`}
+                    >
+                      {s}
+                      <span className="text-xs opacity-75">({cat})</span>
+                      <span className="text-xs font-normal">
+                        {status === "know" ? "I know this" : "Need practice"}
+                      </span>
+                    </button>
+                  )
+                })
               )}
             </div>
           </CardContent>
         </Card>
 
-        {/* Round-wise Checklist */}
+        {/* Round-wise Checklist + export */}
         <Card className="lg:col-span-2">
-          <CardHeader>
-            <CardTitle>Round-wise Preparation Checklist</CardTitle>
-            <CardDescription>Action items per interview round</CardDescription>
+          <CardHeader className="flex flex-row items-start justify-between gap-4">
+            <div>
+              <CardTitle>Round-wise Preparation Checklist</CardTitle>
+              <CardDescription>Action items per interview round</CardDescription>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <Button variant="outline" size="sm" className="gap-1.5" onClick={handleCopyChecklist}>
+                <Copy className="w-4 h-4" />
+                {copyFeedback === "checklist" ? "Copied" : "Copy checklist"}
+              </Button>
+            </div>
           </CardHeader>
           <CardContent className="space-y-6">
             {checklist?.map((round) => (
@@ -141,11 +289,17 @@ export default function Results() {
           </CardContent>
         </Card>
 
-        {/* 7-Day Plan */}
+        {/* 7-Day Plan + export */}
         <Card className="lg:col-span-2">
-          <CardHeader>
-            <CardTitle>7-Day Plan</CardTitle>
-            <CardDescription>Adaptive prep schedule based on detected skills</CardDescription>
+          <CardHeader className="flex flex-row items-start justify-between gap-4">
+            <div>
+              <CardTitle>7-Day Plan</CardTitle>
+              <CardDescription>Adaptive prep schedule based on detected skills</CardDescription>
+            </div>
+            <Button variant="outline" size="sm" className="gap-1.5 shrink-0" onClick={handleCopyPlan}>
+              <Copy className="w-4 h-4" />
+              {copyFeedback === "plan" ? "Copied" : "Copy 7-day plan"}
+            </Button>
           </CardHeader>
           <CardContent>
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -163,11 +317,17 @@ export default function Results() {
           </CardContent>
         </Card>
 
-        {/* 10 Likely Questions */}
+        {/* 10 Likely Questions + export */}
         <Card className="lg:col-span-2">
-          <CardHeader>
-            <CardTitle>10 Likely Interview Questions</CardTitle>
-            <CardDescription>Based on detected skills</CardDescription>
+          <CardHeader className="flex flex-row items-start justify-between gap-4">
+            <div>
+              <CardTitle>10 Likely Interview Questions</CardTitle>
+              <CardDescription>Based on detected skills</CardDescription>
+            </div>
+            <Button variant="outline" size="sm" className="gap-1.5 shrink-0" onClick={handleCopyQuestions}>
+              <Copy className="w-4 h-4" />
+              {copyFeedback === "questions" ? "Copied" : "Copy 10 questions"}
+            </Button>
           </CardHeader>
           <CardContent>
             <ol className="list-decimal list-inside space-y-2 text-gray-700">
@@ -175,6 +335,44 @@ export default function Results() {
                 <li key={i}>{q}</li>
               ))}
             </ol>
+          </CardContent>
+        </Card>
+
+        {/* Export all */}
+        <Card className="lg:col-span-2">
+          <CardHeader>
+            <CardTitle>Export</CardTitle>
+            <CardDescription>Download everything as a single text file</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button variant="outline" className="gap-2" onClick={handleDownloadTxt}>
+              <Download className="w-4 h-4" />
+              Download as TXT
+            </Button>
+          </CardContent>
+        </Card>
+
+        {/* Action Next */}
+        <Card className="lg:col-span-2 border-primary/20 bg-primary/5">
+          <CardHeader>
+            <CardTitle>Action Next</CardTitle>
+            <CardDescription>Focus on weak areas first</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {weakSkills.length > 0 ? (
+              <>
+                <p className="text-sm text-gray-700">
+                  Top skills to practice: <strong>{weakSkills.join(", ")}</strong>
+                </p>
+                <p className="text-sm text-gray-600">
+                  Start Day 1 plan now.
+                </p>
+              </>
+            ) : (
+              <p className="text-sm text-gray-600">
+                All skills marked as known. Start Day 1 plan to reinforce.
+              </p>
+            )}
           </CardContent>
         </Card>
       </div>

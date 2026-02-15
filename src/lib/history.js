@@ -21,3 +21,12 @@ export function getHistory() {
 export function getEntryById(id) {
   return getHistory().find((e) => e.id === id)
 }
+
+export function updateEntry(id, updates) {
+  const list = getHistory()
+  const idx = list.findIndex((e) => e.id === id)
+  if (idx === -1) return null
+  list[idx] = { ...list[idx], ...updates }
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(list))
+  return list[idx]
+}
