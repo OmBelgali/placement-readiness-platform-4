@@ -1,5 +1,7 @@
 import { Routes, Route } from 'react-router-dom'
 import LandingPage from './pages/LandingPage'
+import TestChecklist from './pages/TestChecklist'
+import Ship from './pages/Ship'
 import DashboardLayout from './pages/dashboard/DashboardLayout'
 import Dashboard from './pages/dashboard/Dashboard'
 import Practice from './pages/dashboard/Practice'
@@ -14,6 +16,8 @@ export default function App() {
   return (
     <Routes>
       <Route path="/" element={<LandingPage />} />
+      <Route path="/prp/07-test" element={<TestChecklist />} />
+      <Route path="/prp/08-ship" element={<Ship />} />
       <Route path="/dashboard" element={<DashboardLayout />}>
         <Route index element={<Dashboard />} />
         <Route path="practice" element={<Practice />} />
