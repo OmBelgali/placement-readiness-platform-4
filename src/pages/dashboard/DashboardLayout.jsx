@@ -10,6 +10,7 @@ import {
   History,
   ClipboardCheck,
   Rocket,
+  FileCheck,
 } from 'lucide-react'
 
 const navItems = [
@@ -22,6 +23,7 @@ const navItems = [
   { to: '/dashboard/profile', icon: User, label: 'Profile' },
   { to: '/prp/07-test', icon: ClipboardCheck, label: 'Test Checklist' },
   { to: '/prp/08-ship', icon: Rocket, label: 'Ship' },
+  { to: '/prp/proof', icon: FileCheck, label: 'Proof' },
 ]
 
 export default function DashboardLayout() {
