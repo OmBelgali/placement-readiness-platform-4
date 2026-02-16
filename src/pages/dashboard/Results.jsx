@@ -195,7 +195,7 @@ export default function Results() {
     )
   }
 
-  const { company, role, extractedSkills, checklist, plan, questions } = entry
+  const { company, role, extractedSkills, checklist, plan, questions, companyIntel, roundMapping } = entry
 
   return (
     <div className="space-y-6">
@@ -215,6 +215,62 @@ export default function Results() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Company Intel — only when company provided */}
+        {companyIntel && (
+          <Card className="lg:col-span-2">
+            <CardHeader>
+              <CardTitle>Company Intel</CardTitle>
+              <CardDescription>Heuristic profile based on company name and JD</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex flex-wrap gap-6">
+                <div>
+                  <p className="text-xs text-gray-500 uppercase tracking-wide">Company</p>
+                  <p className="font-semibold text-gray-900">{companyIntel.name}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-gray-500 uppercase tracking-wide">Industry</p>
+                  <p className="font-medium text-gray-900">{companyIntel.industry}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-gray-500 uppercase tracking-wide">Estimated Size</p>
+                  <p className="font-medium text-gray-900">{companyIntel.sizeLabel}</p>
+                </div>
+              </div>
+              <div>
+                <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">Typical Hiring Focus</p>
+                <p className="text-sm text-gray-700">{companyIntel.hiringFocus}</p>
+              </div>
+              <p className="text-xs text-gray-400 italic">Demo Mode: Company intel generated heuristically.</p>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Round Mapping — vertical timeline */}
+        {roundMapping && roundMapping.length > 0 && (
+          <Card className="lg:col-span-2">
+            <CardHeader>
+              <CardTitle>Round Mapping</CardTitle>
+              <CardDescription>Expected interview flow based on company and skills</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-6">
+                {roundMapping.map((r, i) => (
+                  <div key={i} className="flex gap-4">
+                    <div className="w-8 h-8 rounded-full bg-primary text-white flex items-center justify-center text-sm font-medium shrink-0">
+                      {i + 1}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-semibold text-gray-900">{r.round}</p>
+                      <p className="text-sm text-gray-600 mt-1">Why this round matters: {r.why}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Readiness Score */}
         <Card>
           <CardHeader>

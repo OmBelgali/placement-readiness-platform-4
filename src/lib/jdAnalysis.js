@@ -252,12 +252,123 @@ export function calculateReadinessScore(company, role, jdText, extracted) {
   return Math.min(score, 100)
 }
 
+const ENTERPRISE_COMPANIES = [
+  "amazon", "google", "microsoft", "meta", "apple", "infosys", "tcs", "wipro", "hcl",
+  "accenture", "capgemini", "cognizant", "deloitte", "oracle", "sap", "ibm", "salesforce",
+  "adobe", "netflix", "uber", "airbnb", "goldman sachs", "morgan stanley", "jpmorgan",
+  "flipkart", "paypal", "vmware", "intel", "qualcomm",
+]
+
+const INDUSTRY_KEYWORDS = [
+  { keywords: ["finance", "banking", "fintech", "investment"], industry: "Financial Services" },
+  { keywords: ["healthcare", "medical", "pharma", "clinical"], industry: "Healthcare" },
+  { keywords: ["e-commerce", "ecommerce", "retail", "marketplace"], industry: "E-commerce" },
+  { keywords: ["education", "edtech", "learning"], industry: "EdTech" },
+  { keywords: ["manufacturing", "automotive", "industrial"], industry: "Manufacturing" },
+]
+
+export function getCompanyIntel(company, jdText) {
+  if (!company || typeof company !== "string" || !company.trim()) {
+    return null
+  }
+
+  const name = company.trim()
+  const nameLower = name.toLowerCase()
+  const text = (jdText || "").toLowerCase()
+
+  let size = "Startup"
+  let sizeLabel = "Startup (<200)"
+  if (ENTERPRISE_COMPANIES.some((c) => nameLower.includes(c))) {
+    size = "Enterprise"
+    sizeLabel = "Enterprise (2000+)"
+  } else if (text.includes("200") && (text.includes("2000") || text.includes("500"))) {
+    size = "Mid-size"
+    sizeLabel = "Mid-size (200–2000)"
+  }
+
+  let industry = "Technology Services"
+  for (const { keywords, industry: ind } of INDUSTRY_KEYWORDS) {
+    if (keywords.some((kw) => text.includes(kw))) {
+      industry = ind
+      break
+    }
+  }
+
+  const hiringFocus = size === "Enterprise"
+    ? "Structured DSA rounds, strong core CS fundamentals, and standardized aptitude screening. Expect multiple technical rounds with algorithm-heavy focus."
+    : "Practical problem-solving, stack depth, and hands-on coding. Startups often value project fit and culture over formal process."
+
+  return {
+    name,
+    industry,
+    size,
+    sizeLabel,
+    hiringFocus,
+  }
+}
+
+const ROUND_WHY = {
+  "Online Test (DSA + Aptitude)": "Filters candidates on core aptitude and coding basics before face-to-face rounds.",
+  "Technical (DSA + Core CS)": "Assesses depth in algorithms and CS fundamentals. Expect coding and theory.",
+  "Tech + Projects": "Evaluates real-world application and project experience aligned with the role.",
+  "HR": "Culture fit, behavioral alignment, and communication. Your chance to ask about the team.",
+  "Practical coding": "Quick validation of hands-on coding ability. Often live coding or take-home.",
+  "System discussion": "Assesses architectural thinking, stack depth, and trade-off reasoning.",
+  "Culture fit": "Startup teams value alignment, ownership, and growth mindset over formal credentials.",
+  "Aptitude / Basics": "Tests quantitative and logical reasoning. Many companies screen here first.",
+  "DSA + Core CS": "Deep dive into data structures and algorithms. Be ready to code and explain.",
+  "Projects + Stack": "Discussion of your projects and how they map to the tech stack.",
+}
+
+export function getRoundMapping(company, extracted, jdText) {
+  const intel = getCompanyIntel(company, jdText || "")
+  const size = intel?.size || "Startup"
+  const categories = extracted?.categories || []
+  const has = (cat) => categories.includes(cat)
+  const hasWeb = has("Web")
+  const hasDSA = has("Core CS") || has("Languages")
+
+  if (size === "Enterprise" && hasDSA) {
+    return [
+      { round: "Round 1: Online Test (DSA + Aptitude)", why: ROUND_WHY["Online Test (DSA + Aptitude)"] },
+      { round: "Round 2: Technical (DSA + Core CS)", why: ROUND_WHY["Technical (DSA + Core CS)"] },
+      { round: "Round 3: Tech + Projects", why: ROUND_WHY["Tech + Projects"] },
+      { round: "Round 4: HR", why: ROUND_WHY["HR"] },
+    ]
+  }
+
+  if (size === "Startup" && hasWeb) {
+    return [
+      { round: "Round 1: Practical coding", why: ROUND_WHY["Practical coding"] },
+      { round: "Round 2: System discussion", why: ROUND_WHY["System discussion"] },
+      { round: "Round 3: Culture fit", why: ROUND_WHY["Culture fit"] },
+    ]
+  }
+
+  if (size === "Enterprise") {
+    return [
+      { round: "Round 1: Aptitude / Basics", why: ROUND_WHY["Aptitude / Basics"] },
+      { round: "Round 2: Technical (DSA + Core CS)", why: ROUND_WHY["Technical (DSA + Core CS)"] },
+      { round: "Round 3: Tech + Projects", why: ROUND_WHY["Tech + Projects"] },
+      { round: "Round 4: HR", why: ROUND_WHY["HR"] },
+    ]
+  }
+
+  return [
+    { round: "Round 1: Practical coding", why: ROUND_WHY["Practical coding"] },
+    { round: "Round 2: Projects + Stack", why: ROUND_WHY["Projects + Stack"] },
+    { round: "Round 3: Culture fit", why: ROUND_WHY["Culture fit"] },
+  ]
+}
+
 export function analyzeJD(company, role, jdText) {
   const extracted = extractSkills(jdText)
   const checklist = generateChecklist(extracted)
   const plan = generate7DayPlan(extracted)
   const questions = generateQuestions(extracted)
   const readinessScore = calculateReadinessScore(company, role, jdText, extracted)
+  const companyIntel = getCompanyIntel(company, jdText)
+  const roundMapping = getRoundMapping(company, extracted, jdText)
 
   return {
     extractedSkills: extracted,
@@ -265,5 +376,7 @@ export function analyzeJD(company, role, jdText) {
     plan,
     questions,
     readinessScore,
+    companyIntel,
+    roundMapping,
   }
 }

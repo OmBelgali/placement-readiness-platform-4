@@ -23,6 +23,8 @@ export default function Analyze() {
       plan: result.plan,
       questions: result.questions,
       readinessScore: result.readinessScore,
+      companyIntel: result.companyIntel,
+      roundMapping: result.roundMapping,
     }
     const saved = saveAnalysis(entry)
     navigate(`/dashboard/results?id=${saved.id}`)
