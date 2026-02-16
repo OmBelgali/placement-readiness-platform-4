@@ -5,26 +5,44 @@ import { Button } from "@/components/ui/button"
 import { analyzeJD } from "@/lib/jdAnalysis"
 import { saveAnalysis } from "@/lib/history"
 
+const MIN_JD_LENGTH = 200
+
 export default function Analyze() {
   const navigate = useNavigate()
   const [company, setCompany] = useState("")
   const [role, setRole] = useState("")
   const [jdText, setJdText] = useState("")
+  const [jdWarning, setJdWarning] = useState(null)
+
+  function handleJdChange(e) {
+    const val = e.target.value
+    setJdText(val)
+    if (val.length > 0 && val.length < MIN_JD_LENGTH) {
+      setJdWarning("This JD is too short to analyze deeply. Paste full JD for better output.")
+    } else {
+      setJdWarning(null)
+    }
+  }
 
   function handleSubmit(e) {
     e.preventDefault()
-    const result = analyzeJD(company, role, jdText)
+    const trimmed = jdText.trim()
+    if (!trimmed) return
+
+    const result = analyzeJD(company.trim(), role.trim(), trimmed)
     const entry = {
-      company: company.trim(),
-      role: role.trim(),
-      jdText: jdText.trim(),
+      company: company.trim() || "",
+      role: role.trim() || "",
+      jdText: trimmed,
       extractedSkills: result.extractedSkills,
-      checklist: result.checklist,
-      plan: result.plan,
-      questions: result.questions,
-      readinessScore: result.readinessScore,
-      companyIntel: result.companyIntel,
       roundMapping: result.roundMapping,
+      checklist: result.checklist,
+      plan7Days: result.plan7Days,
+      questions: result.questions,
+      baseScore: result.baseScore,
+      skillConfidenceMap: {},
+      finalScore: result.baseScore,
+      companyIntel: result.companyIntel,
     }
     const saved = saveAnalysis(entry)
     navigate(`/dashboard/results?id=${saved.id}`)
@@ -41,12 +59,12 @@ export default function Analyze() {
         <Card>
           <CardHeader>
             <CardTitle>Job Details</CardTitle>
-            <CardDescription>Enter company, role, and paste the full job description</CardDescription>
+            <CardDescription>Enter company, role, and paste the full job description. JD is required.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
             <div>
               <label htmlFor="company" className="block text-sm font-medium text-gray-700 mb-1">
-                Company Name
+                Company Name (optional)
               </label>
               <input
                 id="company"
@@ -59,7 +77,7 @@ export default function Analyze() {
             </div>
             <div>
               <label htmlFor="role" className="block text-sm font-medium text-gray-700 mb-1">
-                Role
+                Role (optional)
               </label>
               <input
                 id="role"
@@ -72,17 +90,23 @@ export default function Analyze() {
             </div>
             <div>
               <label htmlFor="jd" className="block text-sm font-medium text-gray-700 mb-1">
-                Job Description
+                Job Description (required)
               </label>
               <textarea
                 id="jd"
                 rows={12}
                 value={jdText}
-                onChange={(e) => setJdText(e.target.value)}
+                onChange={handleJdChange}
                 placeholder="Paste the full job description here..."
                 className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary font-mono text-sm"
                 required
+                minLength={1}
               />
+              {jdWarning && (
+                <p className="mt-2 text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+                  {jdWarning}
+                </p>
+              )}
             </div>
             <Button type="submit">Analyze</Button>
           </CardContent>

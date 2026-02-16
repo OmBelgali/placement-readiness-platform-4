@@ -30,13 +30,23 @@ const SKILL_CATEGORIES = {
 }
 
 export function extractSkills(jdText) {
+  const empty = {
+    coreCS: [],
+    languages: [],
+    web: [],
+    data: [],
+    cloud: [],
+    testing: [],
+    other: [],
+  }
+
   if (!jdText || typeof jdText !== "string") {
-    return { byCategory: {}, categories: ["General fresher stack"], allSkills: ["General fresher stack"] }
+    empty.other = ["Communication", "Problem solving", "Basic coding", "Projects"]
+    return empty
   }
 
   const text = jdText.toLowerCase()
-  const byCategory = {}
-  const categories = []
+  const out = { ...empty }
 
   for (const [key, cat] of Object.entries(SKILL_CATEGORIES)) {
     const found = []
@@ -44,23 +54,33 @@ export function extractSkills(jdText) {
       const regex = new RegExp(`\\b${kw.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\b`, "i")
       if (regex.test(text)) found.push(kw)
     }
-    if (found.length > 0) {
-      byCategory[cat.label] = found
-      categories.push(cat.label)
-    }
+    const schemaKey = key === "cloudDevOps" ? "cloud" : key
+    if (found.length > 0) out[schemaKey] = found
   }
 
-  if (categories.length === 0) {
-    return { byCategory: { "General": ["General fresher stack"] }, categories: ["General fresher stack"], allSkills: ["General fresher stack"] }
+  const hasAny = Object.values(out).some((arr) => arr.length > 0)
+  if (!hasAny) {
+    out.other = ["Communication", "Problem solving", "Basic coding", "Projects"]
   }
 
-  const allSkills = Object.values(byCategory).flat()
-  return { byCategory, categories, allSkills }
+  return out
+}
+
+function hasCategory(extracted, cat) {
+  const map = {
+    "Core CS": "coreCS",
+    Languages: "languages",
+    Web: "web",
+    Data: "data",
+    "Cloud/DevOps": "cloud",
+    Testing: "testing",
+  }
+  const key = map[cat]
+  return key && Array.isArray(extracted[key]) && extracted[key].length > 0
 }
 
 function getChecklistForRound(roundNum, extracted) {
-  const { byCategory, categories } = extracted
-  const has = (cat) => categories.includes(cat)
+  const has = (cat) => hasCategory(extracted, cat)
 
   switch (roundNum) {
     case 1:
@@ -117,16 +137,15 @@ function getChecklistForRound(roundNum, extracted) {
 
 export function generateChecklist(extracted) {
   return [
-    { round: "Round 1: Aptitude / Basics", items: getChecklistForRound(1, extracted) },
-    { round: "Round 2: DSA + Core CS", items: getChecklistForRound(2, extracted) },
-    { round: "Round 3: Tech Interview (Projects + Stack)", items: getChecklistForRound(3, extracted) },
-    { round: "Round 4: Managerial / HR", items: getChecklistForRound(4, extracted) },
+    { roundTitle: "Round 1: Aptitude / Basics", items: getChecklistForRound(1, extracted) },
+    { roundTitle: "Round 2: DSA + Core CS", items: getChecklistForRound(2, extracted) },
+    { roundTitle: "Round 3: Tech Interview (Projects + Stack)", items: getChecklistForRound(3, extracted) },
+    { roundTitle: "Round 4: Managerial / HR", items: getChecklistForRound(4, extracted) },
   ]
 }
 
 function get7DayPlan(extracted) {
-  const { byCategory, categories } = extracted
-  const has = (cat) => categories.includes(cat)
+  const has = (cat) => hasCategory(extracted, cat)
 
   const base = [
     { day: 1, title: "Basics + Core CS", items: ["Quantitative aptitude practice", "Logical reasoning", "OS & DBMS basics", "Networks fundamentals"] },
@@ -153,7 +172,11 @@ function get7DayPlan(extracted) {
     base[4].items.push("Testing strategy for projects")
   }
 
-  return base.map((d) => ({ ...d, items: d.items.slice(0, 6) }))
+  return base.map((d) => ({
+    day: d.day,
+    focus: d.title,
+    tasks: d.items.slice(0, 6),
+  }))
 }
 
 export function generate7DayPlan(extracted) {
@@ -206,7 +229,7 @@ const QUESTION_TEMPLATES = {
     "Describe TDD and when to use it.",
     "How would you test an API endpoint?",
   ],
-  "General fresher stack": [
+  Other: [
     "Tell me about a project you're proud of.",
     "How do you approach a new problem?",
     "Describe a time you learned something difficult.",
@@ -215,13 +238,31 @@ const QUESTION_TEMPLATES = {
   ],
 }
 
+function getCategoriesFromExtracted(extracted) {
+  const order = ["Core CS", "Languages", "Web", "Data", "Cloud/DevOps", "Testing", "Other"]
+  const map = {
+    coreCS: "Core CS",
+    languages: "Languages",
+    web: "Web",
+    data: "Data",
+    cloud: "Cloud/DevOps",
+    testing: "Testing",
+    other: "Other",
+  }
+  const cats = []
+  for (const [key, label] of Object.entries(map)) {
+    if (Array.isArray(extracted[key]) && extracted[key].length > 0) cats.push(label)
+  }
+  return cats.length > 0 ? cats : ["Other"]
+}
+
 export function generateQuestions(extracted) {
-  const { categories } = extracted
+  const categories = getCategoriesFromExtracted(extracted)
   const questions = []
   const used = new Set()
 
   for (const cat of categories) {
-    const pool = QUESTION_TEMPLATES[cat] || QUESTION_TEMPLATES["General fresher stack"]
+    const pool = QUESTION_TEMPLATES[cat] || QUESTION_TEMPLATES.Other
     for (const q of pool) {
       if (!used.has(q) && questions.length < 10) {
         questions.push(q)
@@ -231,7 +272,7 @@ export function generateQuestions(extracted) {
   }
 
   if (questions.length < 10) {
-    for (const q of QUESTION_TEMPLATES["General fresher stack"]) {
+    for (const q of QUESTION_TEMPLATES.Other) {
       if (!used.has(q) && questions.length < 10) {
         questions.push(q)
         used.add(q)
@@ -244,7 +285,8 @@ export function generateQuestions(extracted) {
 
 export function calculateReadinessScore(company, role, jdText, extracted) {
   let score = 35
-  const catCount = extracted.categories.filter((c) => c !== "General fresher stack").length
+  const categories = getCategoriesFromExtracted(extracted)
+  const catCount = categories.filter((c) => c !== "Other").length
   score += Math.min(catCount * 5, 30)
   if (company && company.trim().length > 0) score += 10
   if (role && role.trim().length > 0) score += 10
@@ -323,59 +365,67 @@ const ROUND_WHY = {
 export function getRoundMapping(company, extracted, jdText) {
   const intel = getCompanyIntel(company, jdText || "")
   const size = intel?.size || "Startup"
-  const categories = extracted?.categories || []
-  const has = (cat) => categories.includes(cat)
+  const has = (cat) => hasCategory(extracted || {}, cat)
   const hasWeb = has("Web")
   const hasDSA = has("Core CS") || has("Languages")
 
+  const focusFor = (title) => {
+    const m = title.match(/(?:Round \d+:\s*)?(.+)/)
+    return m ? m[1].split(/[+,]/).map((s) => s.trim()).filter(Boolean) : []
+  }
+
   if (size === "Enterprise" && hasDSA) {
-    return [
+    const rounds = [
       { round: "Round 1: Online Test (DSA + Aptitude)", why: ROUND_WHY["Online Test (DSA + Aptitude)"] },
       { round: "Round 2: Technical (DSA + Core CS)", why: ROUND_WHY["Technical (DSA + Core CS)"] },
       { round: "Round 3: Tech + Projects", why: ROUND_WHY["Tech + Projects"] },
       { round: "Round 4: HR", why: ROUND_WHY["HR"] },
     ]
+    return rounds.map((r) => ({ roundTitle: r.round, focusAreas: focusFor(r.round), whyItMatters: r.why }))
   }
 
   if (size === "Startup" && hasWeb) {
-    return [
+    const rounds = [
       { round: "Round 1: Practical coding", why: ROUND_WHY["Practical coding"] },
       { round: "Round 2: System discussion", why: ROUND_WHY["System discussion"] },
       { round: "Round 3: Culture fit", why: ROUND_WHY["Culture fit"] },
     ]
+    return rounds.map((r) => ({ roundTitle: r.round, focusAreas: focusFor(r.round), whyItMatters: r.why }))
   }
 
   if (size === "Enterprise") {
-    return [
+    const rounds = [
       { round: "Round 1: Aptitude / Basics", why: ROUND_WHY["Aptitude / Basics"] },
       { round: "Round 2: Technical (DSA + Core CS)", why: ROUND_WHY["Technical (DSA + Core CS)"] },
       { round: "Round 3: Tech + Projects", why: ROUND_WHY["Tech + Projects"] },
       { round: "Round 4: HR", why: ROUND_WHY["HR"] },
     ]
+    return rounds.map((r) => ({ roundTitle: r.round, focusAreas: focusFor(r.round), whyItMatters: r.why }))
   }
 
-  return [
+  const rounds = [
     { round: "Round 1: Practical coding", why: ROUND_WHY["Practical coding"] },
     { round: "Round 2: Projects + Stack", why: ROUND_WHY["Projects + Stack"] },
     { round: "Round 3: Culture fit", why: ROUND_WHY["Culture fit"] },
   ]
+  return rounds.map((r) => ({ roundTitle: r.round, focusAreas: focusFor(r.round), whyItMatters: r.why }))
 }
 
 export function analyzeJD(company, role, jdText) {
   const extracted = extractSkills(jdText)
   const checklist = generateChecklist(extracted)
-  const plan = generate7DayPlan(extracted)
+  const plan7Days = generate7DayPlan(extracted)
   const questions = generateQuestions(extracted)
-  const readinessScore = calculateReadinessScore(company, role, jdText, extracted)
+  const baseScore = calculateReadinessScore(company, role, jdText, extracted)
   const companyIntel = getCompanyIntel(company, jdText)
   const roundMapping = getRoundMapping(company, extracted, jdText)
 
   return {
     extractedSkills: extracted,
     checklist,
-    plan,
+    plan7Days,
     questions,
-    readinessScore,
+    baseScore,
     companyIntel,
     roundMapping,
   }

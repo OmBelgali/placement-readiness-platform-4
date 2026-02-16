@@ -1,7 +1,7 @@
 import { useMemo } from "react"
 import { Link } from "react-router-dom"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { getHistory } from "@/lib/history"
+import { getHistoryWithErrors } from "@/lib/history"
 import { FileText } from "lucide-react"
 
 function formatDate(iso) {
@@ -13,16 +13,12 @@ function formatDate(iso) {
   }
 }
 
-function getLiveScore(entry) {
-  const base = entry.readinessScore ?? 0
-  const map = entry.skillConfidenceMap || {}
-  let delta = 0
-  for (const v of Object.values(map)) delta += v === "know" ? 2 : -2
-  return Math.max(0, Math.min(100, Math.round(base + delta)))
+function getDisplayScore(entry) {
+  return Math.round(entry.finalScore ?? entry.readinessScore ?? 0)
 }
 
 export default function History() {
-  const entries = useMemo(() => getHistory(), [])
+  const { entries, corruptedCount } = useMemo(() => getHistoryWithErrors(), [])
 
   return (
     <div className="space-y-6">
@@ -30,6 +26,14 @@ export default function History() {
         <h2 className="text-2xl font-bold text-gray-900">Analysis History</h2>
         <p className="text-gray-600">View past JD analyses</p>
       </div>
+
+      {corruptedCount > 0 && (
+        <div className="text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-4 py-3">
+          {corruptedCount === 1
+            ? "One saved entry couldn't be loaded. Create a new analysis."
+            : "Some saved entries couldn't be loaded. Create a new analysis."}
+        </div>
+      )}
 
       {entries.length === 0 ? (
         <Card>
@@ -54,7 +58,7 @@ export default function History() {
                     <p className="text-sm text-gray-500">{formatDate(e.createdAt)}</p>
                   </div>
                   <span className="px-3 py-1 rounded-full text-sm font-medium bg-primary/10 text-primary">
-                    {getLiveScore(e)}/100
+                    {getDisplayScore(e)}/100
                   </span>
                 </CardContent>
               </Card>

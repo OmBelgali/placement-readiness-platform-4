@@ -3,6 +3,7 @@ import { useSearchParams, Link } from "react-router-dom"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { getEntryById, getHistory, updateEntry } from "@/lib/history"
+import { extractedToByCategory } from "@/lib/schema"
 import { ChevronLeft, Copy, Download } from "lucide-react"
 
 function CircularScore({ value }) {
@@ -37,9 +38,9 @@ function CircularScore({ value }) {
 }
 
 function getAllSkills(extractedSkills) {
-  const byCat = extractedSkills?.byCategory || {}
+  const byCat = extractedToByCategory(extractedSkills)
   return Object.entries(byCat).flatMap(([cat, skills]) =>
-    skills.map((s) => ({ skill: s, category: cat }))
+    (Array.isArray(skills) ? skills : []).map((s) => ({ skill: s, category: cat }))
   )
 }
 
@@ -56,7 +57,7 @@ function formatPlanAsText(plan) {
   return plan
     .map(
       (d) =>
-        `Day ${d.day}: ${d.title}\n${(d.items || []).map((i) => `  • ${i}`).join("\n")}`
+        `Day ${d.day}: ${d.focus ?? d.title ?? ""}\n${(d.tasks ?? d.items ?? []).map((i) => `  • ${i}`).join("\n")}`
     )
     .join("\n\n")
 }
@@ -66,7 +67,7 @@ function formatChecklistAsText(checklist) {
   return checklist
     .map(
       (r) =>
-        `${r.round}\n${(r.items || []).map((i) => `  • ${i}`).join("\n")}`
+        `${r.roundTitle ?? r.round ?? ""}\n${(r.items || []).map((i) => `  • ${i}`).join("\n")}`
     )
     .join("\n\n")
 }
@@ -104,7 +105,7 @@ export default function Results() {
     setSkillConfidenceMap(map)
   }, [entry?.id, allSkills, entry?.skillConfidenceMap])
 
-  const baseScore = entry?.readinessScore ?? 0
+  const baseScore = entry?.baseScore ?? entry?.readinessScore ?? 0
   const liveScore = useMemo(
     () => computeLiveScore(baseScore, skillConfidenceMap),
     [baseScore, skillConfidenceMap]
@@ -134,10 +135,10 @@ export default function Results() {
   const [copyFeedback, setCopyFeedback] = useState(null)
 
   const handleCopyPlan = useCallback(async () => {
-    const ok = await copyToClipboard(formatPlanAsText(entry?.plan))
+    const ok = await copyToClipboard(formatPlanAsText(entry?.plan7Days ?? entry?.plan))
     setCopyFeedback(ok ? "plan" : null)
     if (ok) setTimeout(() => setCopyFeedback(null), 1500)
-  }, [entry?.plan, copyToClipboard])
+  }, [entry?.plan7Days, entry?.plan, copyToClipboard])
 
   const handleCopyChecklist = useCallback(async () => {
     const ok = await copyToClipboard(formatChecklistAsText(entry?.checklist))
@@ -152,9 +153,10 @@ export default function Results() {
   }, [entry?.questions, copyToClipboard])
 
   const handleDownloadTxt = useCallback(() => {
+    const plan = entry?.plan7Days ?? entry?.plan
     const sections = [
       `Placement Readiness — ${entry?.company || "Company"} — ${entry?.role || "Role"}\n${"=".repeat(50)}`,
-      `\n7-DAY PLAN\n${"-".repeat(20)}\n${formatPlanAsText(entry?.plan)}`,
+      `\n7-DAY PLAN\n${"-".repeat(20)}\n${formatPlanAsText(plan)}`,
       `\n\nROUND-WISE CHECKLIST\n${"-".repeat(20)}\n${formatChecklistAsText(entry?.checklist)}`,
       `\n\n10 LIKELY INTERVIEW QUESTIONS\n${"-".repeat(30)}\n${formatQuestionsAsText(entry?.questions)}`,
     ]
@@ -195,7 +197,8 @@ export default function Results() {
     )
   }
 
-  const { company, role, extractedSkills, checklist, plan, questions, companyIntel, roundMapping } = entry
+  const { company, role, extractedSkills, checklist, plan7Days, plan, questions, companyIntel, roundMapping } = entry
+  const planData = plan7Days ?? plan ?? []
 
   return (
     <div className="space-y-6">
@@ -261,8 +264,8 @@ export default function Results() {
                       {i + 1}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="font-semibold text-gray-900">{r.round}</p>
-                      <p className="text-sm text-gray-600 mt-1">Why this round matters: {r.why}</p>
+                      <p className="font-semibold text-gray-900">{r.roundTitle ?? r.round}</p>
+                      <p className="text-sm text-gray-600 mt-1">Why this round matters: {r.whyItMatters ?? r.why}</p>
                     </div>
                   </div>
                 ))}
@@ -290,7 +293,7 @@ export default function Results() {
           </CardHeader>
           <CardContent>
             <div className="flex flex-wrap gap-2">
-              {Object.entries(extractedSkills?.byCategory || {}).map(([cat, skills]) =>
+              {Object.entries(extractedToByCategory(extractedSkills)).map(([cat, skills]) =>
                 skills.map((s) => {
                   const status = skillConfidenceMap[s] ?? "practice"
                   return (
@@ -333,8 +336,8 @@ export default function Results() {
           </CardHeader>
           <CardContent className="space-y-6">
             {checklist?.map((round) => (
-              <div key={round.round}>
-                <h4 className="font-semibold text-gray-900 mb-2">{round.round}</h4>
+              <div key={round.roundTitle ?? round.round}>
+                <h4 className="font-semibold text-gray-900 mb-2">{round.roundTitle ?? round.round}</h4>
                 <ul className="list-disc list-inside space-y-1 text-gray-600">
                   {round.items?.map((item, i) => (
                     <li key={i}>{item}</li>
@@ -359,11 +362,11 @@ export default function Results() {
           </CardHeader>
           <CardContent>
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-              {plan?.map((day) => (
+              {planData?.map((day) => (
                 <div key={day.day} className="border border-gray-200 rounded-lg p-4">
-                  <p className="font-semibold text-gray-900">Day {day.day}: {day.title}</p>
+                  <p className="font-semibold text-gray-900">Day {day.day}: {day.focus ?? day.title}</p>
                   <ul className="mt-2 space-y-1 text-sm text-gray-600">
-                    {day.items?.map((item, i) => (
+                    {(day.tasks ?? day.items ?? []).map((item, i) => (
                       <li key={i}>• {item}</li>
                     ))}
                   </ul>
