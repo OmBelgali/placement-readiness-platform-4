@@ -8,6 +8,8 @@ import {
   CircleUser,
   ScanSearch,
   History,
+  ClipboardCheck,
+  Rocket,
 } from 'lucide-react'
 
 const navItems = [
@@ -18,6 +20,8 @@ const navItems = [
   { to: '/dashboard/assessments', icon: ClipboardList, label: 'Assessments' },
   { to: '/dashboard/resources', icon: BookOpen, label: 'Resources' },
   { to: '/dashboard/profile', icon: User, label: 'Profile' },
+  { to: '/prp/07-test', icon: ClipboardCheck, label: 'Test Checklist' },
+  { to: '/prp/08-ship', icon: Rocket, label: 'Ship' },
 ]
 
 export default function DashboardLayout() {
